@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://piczmzrwogxzflwkacha.supabase.co; media-src 'self' blob: https://piczmzrwogxzflwkacha.supabase.co; connect-src 'self' https://piczmzrwogxzflwkacha.supabase.co wss://piczmzrwogxzflwkacha.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Fayl — Call Center OS</title>
+<script src="../vendor/supabase.js"></script>
+<script src="../config.js"></script>
+<script src="../sb.js"></script>
+</head>
+<body>
+<p id="msg" style="font:14px system-ui,sans-serif;color:#86868B;text-align:center;margin-top:30vh">Fayl ochilmoqda…</p>
+<script>
+/* Panelda saqlangan fayl havolasi (f/?id=…&n=nom) shu yerga keladi.
+   Fayl yopiq bucketda — a'zo tekshirilgach 2 daqiqalik imzolangan havola olinadi va ochiladi. */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var id = q.get("id") || "", name = q.get("n") || "";
+  var msg = document.getElementById("msg");
+  if (!/^[0-9a-f]{32}$/.test(id)) { msg.textContent = "Havola noto'g'ri."; return; }
+  // Brauzer o'zi ko'rsata oladigan turlar ochiladi, qolgani yuklab olinadi.
+  var inline = /\.(pdf|png|jpe?g|gif|webp|txt)$/i.test(name) || !name;
+  CCOS.requireMember().then(function () {
+    return CCOS.sb.storage.from("files").createSignedUrl(id, 120, inline ? undefined : { download: name });
+  }).then(function (x) {
+    if (x.error) throw x.error;
+    location.replace(x.data.signedUrl);
+  }).catch(function (e) { msg.textContent = "Fayl topilmadi yoki ruxsat yo'q: " + CCOS.errText(e); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://piczmzrwogxzflwkacha.supabase.co; media-src 'self' blob: https://piczmzrwogxzflwkacha.supabase.co; connect-src 'self' https://piczmzrwogxzflwkacha.supabase.co wss://piczmzrwogxzflwkacha.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Kirish — Call Center OS</title>
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../base.css">
+<script src="../vendor/supabase.js"></script>
+<script src="../config.js"></script>
+<script src="../sb.js"></script>
+<style>
+  body { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+  .wrap { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand span { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .brand b { font-family: var(--display); font-size: 18px; }
+  form { display: flex; flex-direction: column; gap: 14px; }
+  form h1 { font-size: 20px; }
+  form .btn { width: 100%; padding: 11px 16px; font-size: 14px; }
+  .foot { text-align: center; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand">
+    <img class="mark" src="../icon.svg" alt="">
+    <div><span>Call center boshqaruvi</span><b>Call Center OS</b></div>
+  </div>
+  <form class="card" id="f" novalidate>
+    <h1>Tizimga kirish</h1>
+    <div class="field"><label for="login">Login yoki email</label>
+      <input id="login" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+    <div class="field"><label for="password">Parol</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-pri" id="go" type="submit">Kirish</button>
+    <div class="msg err" id="msg" role="alert"></div>
+  </form>
+  <p class="hint foot">Login va parolni administrator beradi. Parolni unutsangiz — unga murojaat qiling.</p>
+</main>
+<script>
+(function () {
+  var f = document.getElementById("f"), msg = document.getElementById("msg"), go = document.getElementById("go");
+  var nx = new URLSearchParams(location.search).get("next") || "";
+  // Faqat saytning ichki sahifasi — tashqi manzilga yo'naltirish mumkin emas.
+  if (!/^[a-z0-9/_.-]*(\?[^\\]*)?$/i.test(nx) || /^\/\//.test(nx) || /:/.test(nx)) nx = "";
+  function target() { return CCOS.base + nx.replace(/^\/+/, ""); }
+
+  // Allaqachon kirgan bo'lsa — to'g'ridan-to'g'ri panelga.
+  CCOS.me().then(function (m) { if (m && m.isMember) location.replace(target()); });
+
+  document.getElementById("login").focus();
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var login = document.getElementById("login").value.trim().toLowerCase(), pw = document.getElementById("password").value;
+    if (!login || !pw) { msg.textContent = "Login va parolni kiriting."; return; }
+    var email = login.indexOf("@") === -1 ? login + "@" + (CCOS.cfg.loginDomain || "login.ccos.invalid") : login;
+    go.disabled = true; msg.textContent = "";
+    CCOS.sb.auth.signInWithPassword({ email: email, password: pw }).then(function (r) {
+      if (r.error) {
+        msg.textContent = /invalid login credentials/i.test(r.error.message) ? "Login yoki parol noto'g'ri."
+          : /banned/i.test(r.error.message) ? "Hisobingiz bloklangan. Administratorga murojaat qiling."
+          : /rate limit|too many/i.test(r.error.message) ? "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring."
+          : r.error.message;
+        go.disabled = false;
+        document.getElementById("password").select();
+        return;
+      }
+      return CCOS.sb.rpc("touch_login").then(function () { return CCOS.me(true); }).then(function (m) {
+        if (m && m.isMember) { location.replace(target()); return; }
+        msg.textContent = "Hisobingiz hali tasdiqlanmagan — administrator rol berishi kerak.";
+        go.disabled = false;
+        return CCOS.sb.auth.signOut();
+      });
+    }).catch(function () { msg.textContent = "Server bilan aloqa yo'q. Internetni tekshiring."; go.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

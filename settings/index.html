@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://piczmzrwogxzflwkacha.supabase.co; media-src 'self' blob: https://piczmzrwogxzflwkacha.supabase.co; connect-src 'self' https://piczmzrwogxzflwkacha.supabase.co wss://piczmzrwogxzflwkacha.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>Sozlamalar — Call Center OS</title>
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../base.css">
+<script src="../vendor/supabase.js"></script>
+<script src="../config.js"></script>
+<script src="../sb.js"></script>
+<style>
+  .top { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  .top-in { max-width: 980px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .top-in h1 { font-size: 16px; margin-right: auto; }
+  .top-in a { font-weight: 600; text-decoration: none; font-size: 13px; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .card > h2 { font-size: 16px; margin-bottom: 4px; }
+  .card > .hint { margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 12px; align-items: end; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .tbl { overflow-x: auto; margin: 0 -24px; padding: 0 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
+  th { text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  td .who b { display: block; }
+  td .who span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  td select { width: auto; padding: 5px 8px; }
+  td .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .pill.on { background: var(--good-soft); color: var(--good); }
+  .pill.off { background: var(--bad-soft); color: var(--bad); }
+  .pill.wait { background: var(--warn-soft); color: var(--warn); }
+  .me { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  .me b { display: block; font-size: 15px; }
+  .empty { color: var(--muted); font-size: 13.5px; padding: 8px 0; }
+  .inl { display: flex; gap: 6px; align-items: center; }
+  .inl input { width: 170px; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <img class="mark" src="../icon.svg" alt="" style="width:28px;height:28px">
+  <h1>Sozlamalar</h1>
+  <a href="../">← Panelga qaytish</a>
+</div></header>
+
+<main>
+  <section class="card">
+    <h2>Hisobim</h2>
+    <div class="me"><div><b id="me-name">…</b><span class="hint" id="me-role"></span></div></div>
+    <form id="pw" class="grid" novalidate>
+      <div class="field"><label for="pw-old">Joriy parol</label><input id="pw-old" type="password" autocomplete="current-password"></div>
+      <div class="field"><label for="pw-new">Yangi parol</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8"></div>
+      <div class="field"><label for="pw-rep">Yangi parolni takrorlang</label><input id="pw-rep" type="password" autocomplete="new-password"></div>
+      <div class="field"><button class="btn btn-pri" type="submit">Parolni almashtirish</button></div>
+    </form>
+    <div class="msg" id="pw-msg" role="status"></div>
+  </section>
+
+  <section class="card" id="sec-users" hidden>
+    <h2>Foydalanuvchilar</h2>
+    <p class="hint"><b>Administrator</b> — hamma narsa va foydalanuvchilar. <b>Xodim</b> — loyihalar, baholashlar va fayllarni o'zgartiradi. <b>Kuzatuvchi</b> — faqat ko'radi (mijoz rahbari yoki hamkor uchun). Rol, holat yoki parol o'zgarsa — o'sha odamning ochiq sessiyalari yopiladi.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Foydalanuvchi</th><th>Rol</th><th>Holat</th><th>Oxirgi kirish</th><th></th></tr></thead>
+      <tbody id="u-body"></tbody>
+    </table></div>
+    <h3 style="font-size:14px;margin-top:22px">Yangi foydalanuvchi</h3>
+    <form id="u-new" class="grid" style="margin-top:10px" novalidate>
+      <div class="field"><label for="n-login">Login</label><input id="n-login" autocapitalize="none" spellcheck="false" placeholder="masalan: dilnoza"></div>
+      <div class="field"><label for="n-name">Ism</label><input id="n-name" placeholder="Ism Familiya"></div>
+      <div class="field"><label for="n-role">Rol</label><select id="n-role"><option value="editor">Xodim</option><option value="viewer">Kuzatuvchi</option><option value="admin">Administrator</option></select></div>
+      <div class="field"><label for="n-pass">Boshlang'ich parol</label><input id="n-pass" type="text" autocomplete="off" placeholder="kamida 8 belgi"></div>
+      <div class="field"><button class="btn btn-pri" type="submit">Qo'shish</button></div>
+    </form>
+    <div class="msg" id="u-msg" role="status"></div>
+  </section>
+
+  <section class="card" id="sec-backup" hidden>
+    <h2>Zaxira va tiklash</h2>
+    <p class="hint">Baza har kuni 23:30 da nusxasini o'zi oladi va oxirgi 14 kunni saqlaydi — pastdagi ro'yxatdan istalgan kunni yuklab olasiz. Qo'shimcha nusxani haftada bir marta yuklab, kompyuterda saqlang. Tiklash mavjud ma'lumotni o'chirmaydi: fayldagi loyiha va baholashlar qo'shiladi yoki yangilanadi, eski holati tarixda qoladi. Panelning «Zaxira nusxa» fayli, eski sayt (Docker) va claude.ai dagi panel fayli ham qabul qilinadi. Yuklangan fayllar (hujjatlar, ovozlar) bu nusxaga kirmaydi.</p>
+    <div class="row">
+      <button class="btn" id="exp-go" type="button">Hozirgi holatni yuklab olish (JSON)</button>
+      <input id="imp-file" type="file" accept="application/json,.json" style="width:auto">
+      <button class="btn" id="imp-go" type="button" disabled>Fayldan tiklash</button>
+    </div>
+    <div class="msg" id="imp-msg" role="status"></div>
+    <h3 style="font-size:14px;margin-top:22px">Kunlik nusxalar</h3>
+    <div id="b-body" style="margin-top:8px"></div>
+  </section>
+
+  <section class="card" id="sec-trash" hidden>
+    <h2>O'chirilganlar</h2>
+    <p class="hint">O'chirilgan loyiha va baholashlar shu yerda saqlanadi va bir bosishda qaytariladi.</p>
+    <div id="t-body"></div>
+    <div class="msg" id="t-msg" role="status"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var sb = CCOS.sb;
+  var ROLES = { admin: "Administrator", editor: "Xodim", viewer: "Kuzatuvchi" };
+  var ME = null;
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function say(id, text, ok) { var m = $(id); m.textContent = text || ""; m.className = "msg " + (ok ? "ok" : "err"); }
+  function when(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return d.toLocaleDateString("ru-RU", { timeZone: "Asia/Tashkent" }) + " " +
+           d.toLocaleTimeString("ru-RU", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit" });
+  }
+  function tashkentDay() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date()); }
+  function save(name, obj) {
+    return window.claude.use("downloads").then(function (d) { return d.save({ filename: name, data: JSON.stringify(obj, null, 1) }); });
+  }
+
+  /* --- hisobim --- */
+  $("pw").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var a = $("pw-new").value;
+    if (a.length < 8) { say("pw-msg", "Yangi parol kamida 8 belgi bo'lsin."); return; }
+    if (a !== $("pw-rep").value) { say("pw-msg", "Yangi parollar mos emas."); return; }
+    sb.auth.getSession().then(function (r) {
+      var email = r.data.session && r.data.session.user.email;
+      // Joriy parol to'g'riligini qayta kirish orqali tekshiramiz.
+      return sb.auth.signInWithPassword({ email: email, password: $("pw-old").value });
+    }).then(function (r) {
+      if (r.error) throw new Error("Joriy parol noto'g'ri.");
+      return sb.auth.updateUser({ password: a });
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      return sb.auth.signOut({ scope: "others" });
+    }).then(function () {
+      $("pw").reset(); say("pw-msg", "Parol almashtirildi. Boshqa qurilmalardagi sessiyalar yopildi.", true);
+    }).catch(function (x) { say("pw-msg", CCOS.errText(x)); });
+  });
+
+  /* --- foydalanuvchilar --- */
+  function upd(u, patch, okText) {
+    return CCOS.fn("admin-users", Object.assign({ action: "update", id: u.id }, patch))
+      .then(function () { say("u-msg", okText, true); loadUsers(); })
+      .catch(function (x) { say("u-msg", CCOS.errText(x)); loadUsers(); });
+  }
+
+  function loadUsers() {
+    CCOS.fn("admin-users", { action: "list" }).then(function (j) {
+      var tb = $("u-body");
+      tb.textContent = "";
+      j.users.forEach(function (u) {
+        var tr = el("tr");
+        var who = el("div", "who"); who.appendChild(el("b", null, u.name)); who.appendChild(el("span", null, u.login));
+        var td0 = el("td"); td0.appendChild(who); tr.appendChild(td0);
+
+        var sel = el("select");
+        if (u.role === "none") { var o0 = el("option", null, "— rol bering —"); o0.value = "none"; o0.selected = true; sel.appendChild(o0); }
+        Object.keys(ROLES).forEach(function (k) { var o = el("option", null, ROLES[k]); o.value = k; if (k === u.role) o.selected = true; sel.appendChild(o); });
+        sel.addEventListener("change", function () { if (sel.value !== "none") upd(u, { role: sel.value }, u.name + " — rol o'zgardi."); });
+        var td1 = el("td"); td1.appendChild(sel); tr.appendChild(td1);
+
+        var st = !u.active ? ["off", "Bloklangan"] : u.role === "none" ? ["wait", "Tasdiqlanmagan"] : ["on", "Faol"];
+        var td2 = el("td"); td2.appendChild(el("span", "pill " + st[0], st[1])); tr.appendChild(td2);
+        tr.appendChild(el("td", null, when(u.lastLogin)));
+
+        var acts = el("div", "acts");
+        if (!u.self) {
+          var tog = el("button", "btn btn-sm", u.active ? "Bloklash" : "Faollashtirish");
+          tog.type = "button";
+          tog.addEventListener("click", function () { upd(u, { active: !u.active }, u.name + (u.active ? " bloklandi." : " faollashtirildi.")); });
+          acts.appendChild(tog);
+        }
+        var rp = el("button", "btn btn-sm", "Parolni tiklash");
+        rp.type = "button";
+        rp.addEventListener("click", function () {
+          var box = el("span", "inl");
+          var inp = el("input"); inp.type = "text"; inp.placeholder = "yangi parol"; inp.autocomplete = "off";
+          var ok = el("button", "btn btn-sm btn-pri", "Saqlash"); ok.type = "button";
+          ok.addEventListener("click", function () { upd(u, { password: inp.value }, u.name + " uchun yangi parol o'rnatildi. Uni o'ziga shaxsan bering."); });
+          box.appendChild(inp); box.appendChild(ok);
+          acts.replaceChild(box, rp);
+          inp.focus();
+        });
+        acts.appendChild(rp);
+        if (!u.self) {
+          var del = el("button", "btn btn-sm", "O'chirish");
+          del.type = "button";
+          del.addEventListener("click", function () {
+            if (!del.dataset.arm) {
+              del.dataset.arm = "1"; del.textContent = "Tasdiqlang"; del.className = "btn btn-sm btn-bad";
+              setTimeout(function () { delete del.dataset.arm; del.textContent = "O'chirish"; del.className = "btn btn-sm"; }, 5000);
+              return;
+            }
+            CCOS.fn("admin-users", { action: "delete", id: u.id }).then(function () { say("u-msg", u.name + " o'chirildi.", true); loadUsers(); })
+              .catch(function (x) { say("u-msg", CCOS.errText(x)); });
+          });
+          acts.appendChild(del);
+        }
+        var td4 = el("td"); td4.appendChild(acts); tr.appendChild(td4);
+        tb.appendChild(tr);
+      });
+    }).catch(function (x) { say("u-msg", CCOS.errText(x)); });
+  }
+
+  $("u-new").addEventListener("submit", function (e) {
+    e.preventDefault();
+    CCOS.fn("admin-users", { action: "create", login: $("n-login").value, name: $("n-name").value, role: $("n-role").value, password: $("n-pass").value })
+      .then(function (u) {
+        $("u-new").reset();
+        say("u-msg", u.name + " qo'shildi. Kirish uchun login: " + u.login + ". Parolni unga shaxsan bering — birinchi kirishda almashtirsin.", true);
+        loadUsers();
+      })
+      .catch(function (x) { say("u-msg", CCOS.errText(x)); });
+  });
+
+  /* --- zaxira --- */
+  function allDocs(coll) {
+    return window.claude.use("db").then(function (db) { return db.collection(coll).get(); })
+      .then(function (s) { return s.docs.map(function (d) { var o = d.data(); o[coll === "projects" ? "id" : "_id"] = d.id; return o; }); });
+  }
+  $("exp-go").addEventListener("click", function () {
+    say("imp-msg", "Tayyorlanmoqda…", true);
+    Promise.all([allDocs("projects"), allDocs("evaluations")]).then(function (r) {
+      return save("call-center-os-zaxira-" + tashkentDay() + ".json",
+        { app: "Call Center OS", source: "supabase", at: new Date().toISOString(), projects: r[0], evaluations: r[1] })
+        .then(function () { say("imp-msg", r[0].length + " loyiha va " + r[1].length + " baholash yuklab olindi.", true); });
+    }).catch(function (x) { say("imp-msg", CCOS.errText(x)); });
+  });
+
+  $("imp-file").addEventListener("change", function () { $("imp-go").disabled = !$("imp-file").files.length; });
+  $("imp-go").addEventListener("click", function () {
+    var f = $("imp-file").files[0];
+    if (!f) return;
+    $("imp-go").disabled = true;
+    say("imp-msg", "O'qilmoqda…", true);
+    f.text().then(function (t) {
+      var j;
+      try { j = JSON.parse(t.replace(/^\ufeff/, "")); } catch (x) { throw new Error("Fayl JSON emas."); }
+      if (!j || (!Array.isArray(j.projects) && !Array.isArray(j.evaluations))) throw new Error("Bu Call Center OS zaxira fayli emas.");
+      var rows = [];
+      function norm(list, coll, key) {
+        (Array.isArray(list) ? list : []).forEach(function (x) {
+          if (!x || typeof x !== "object" || Array.isArray(x)) return;
+          var d = Object.assign({}, x), id = String(d[key] || "");
+          delete d.id; delete d._id;
+          if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) id = "i" + Math.random().toString(36).slice(2, 12);
+          rows.push({ coll: coll, id: id, data: d });
+        });
+      }
+      norm(j.projects, "projects", "id");
+      norm(j.evaluations, "evaluations", "_id");
+      var done = 0;
+      function batch(i) {
+        if (i >= rows.length) return Promise.resolve();
+        var part = rows.slice(i, i + 200);
+        return sb.from("docs").upsert(part, { onConflict: "coll,id" }).then(function (r) {
+          if (r.error) throw r.error;
+          done += part.length;
+          say("imp-msg", done + " / " + rows.length + " yozildi…", true);
+          return batch(i + 200);
+        });
+      }
+      return batch(0).then(function () {
+        var p = rows.filter(function (r) { return r.coll === "projects"; }).length;
+        say("imp-msg", "Tiklandi: " + p + " loyiha, " + (rows.length - p) + " baholash.", true);
+        loadTrash();
+      });
+    }).catch(function (x) { say("imp-msg", CCOS.errText(x)); }).then(function () { $("imp-go").disabled = false; });
+  });
+
+  function loadBackups() {
+    sb.from("backups").select("day, projects, evaluations, created_at").order("day", { ascending: false }).then(function (r) {
+      var host = $("b-body");
+      host.textContent = "";
+      if (r.error) { host.appendChild(el("div", "empty", CCOS.errText(r.error))); return; }
+      if (!r.data.length) { host.appendChild(el("div", "empty", "Hali kunlik nusxa yo'q — birinchisi bugun 23:30 da olinadi.")); return; }
+      var wrap = el("div", "tbl"), tbl = el("table"), th = el("thead"), hr = el("tr");
+      ["Kun", "Loyihalar", "Baholashlar", "Olingan", ""].forEach(function (h) { hr.appendChild(el("th", null, h)); });
+      th.appendChild(hr); tbl.appendChild(th);
+      var tb = el("tbody");
+      r.data.forEach(function (b) {
+        var tr = el("tr");
+        tr.appendChild(el("td", null, b.day));
+        tr.appendChild(el("td", null, String(b.projects)));
+        tr.appendChild(el("td", null, String(b.evaluations)));
+        tr.appendChild(el("td", null, when(b.created_at)));
+        var btn = el("button", "btn btn-sm", "Yuklab olish"); btn.type = "button";
+        btn.addEventListener("click", function () {
+          sb.from("backups").select("data").eq("day", b.day).single().then(function (x) {
+            if (x.error) throw x.error;
+            return save("call-center-os-kunlik-" + b.day + ".json", x.data.data);
+          }).catch(function (e) { say("imp-msg", CCOS.errText(e)); });
+        });
+        var td = el("td"); td.appendChild(btn); tr.appendChild(td);
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb); wrap.appendChild(tbl); host.appendChild(wrap);
+    });
+  }
+
+  /* --- o'chirilganlar --- */
+  function loadTrash() {
+    sb.rpc("trash_list").then(function (r) {
+      var host = $("t-body");
+      host.textContent = "";
+      if (r.error) { say("t-msg", CCOS.errText(r.error)); return; }
+      if (!r.data.length) { host.appendChild(el("div", "empty", "O'chirilgan narsa yo'q.")); return; }
+      var wrap = el("div", "tbl"), tbl = el("table"), th = el("thead"), hr = el("tr");
+      ["Nima", "Turi", "O'chirilgan", "Kim", ""].forEach(function (h) { hr.appendChild(el("th", null, h)); });
+      th.appendChild(hr); tbl.appendChild(th);
+      var tb = el("tbody");
+      r.data.forEach(function (it) {
+        var tr = el("tr");
+        tr.appendChild(el("td", null, it.label || it.id));
+        tr.appendChild(el("td", null, it.coll === "projects" ? "Loyiha" : "Baholash"));
+        tr.appendChild(el("td", null, when(it.at)));
+        tr.appendChild(el("td", null, it.by_login || "—"));
+        var b = el("button", "btn btn-sm", "Qaytarish"); b.type = "button";
+        b.addEventListener("click", function () {
+          b.disabled = true;
+          sb.rpc("trash_restore", { p_seq: it.seq }).then(function (x) {
+            if (x.error) throw x.error;
+            say("t-msg", "«" + (it.label || it.id) + "» qaytarildi.", true); loadTrash();
+          }).catch(function (e) { say("t-msg", CCOS.errText(e)); b.disabled = false; });
+        });
+        var td = el("td"); td.appendChild(b); tr.appendChild(td);
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb); wrap.appendChild(tbl); host.appendChild(wrap);
+    });
+  }
+
+  CCOS.requireMember().then(function (u) {
+    ME = u;
+    $("me-name").textContent = u.name + " (" + u.login + ")";
+    $("me-role").textContent = u.roleLabel + (u.canWrite ? "" : " · faqat ko'rish");
+    if (u.isAdmin) {
+      ["sec-users", "sec-backup", "sec-trash"].forEach(function (id) { $(id).hidden = false; });
+      loadUsers(); loadTrash(); loadBackups();
+    }
+  });
+})();
+</script>
+</body>
+</html>
